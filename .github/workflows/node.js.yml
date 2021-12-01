@@ -29,3 +29,22 @@ jobs:
     - run: npm ci
     - run: npm run build --if-present
     - run: npm test
+  
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: azure/docker-login@v1
+      with:
+        login-server: jhoregistry.azurecr.io
+        username: ${{ secrets.REGISTRY_USERNAME }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+    - run: |
+        docker build . -t jhoregistry.azurecr.io/myexpressapp-jho:${{ github.sha }}
+        docker push jhoregistry.azurecr.io/myexpressapp-jho:${{ github.sha }}  
+    - uses: azure/webapps-deploy@v2
+     with:
+       app-name: 'myexpressapp-jho'
+       publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+       images: 'jhoregistry.azurecr.io/myexpressapp-jho:${{ github.sha }}'
